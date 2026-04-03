@@ -1013,6 +1013,43 @@
         background: linear-gradient(180deg, rgba(250, 249, 255, 0), rgba(255, 255, 255, 0.94) 45%);
       }
 
+      /* 单壳：Tab 视图切换 */
+      .appViewStack {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .appView {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .appView--active {
+        display: flex;
+      }
+      .appView > .content {
+        flex: 1;
+        min-height: 0;
+      }
+      .navItem--click {
+        cursor: pointer;
+      }
+      .bottomNav--hidden {
+        display: none !important;
+      }
+      .journalCard--click {
+        cursor: pointer;
+      }
+      .journalCard--click:active {
+        opacity: 0.92;
+      }
+      #detail-appbar-actions .iconBtn[hidden] {
+        display: none !important;
+      }
+
       @media (max-width: 460px) {
         :root {
           --phoneW: 360px;
@@ -1048,9 +1085,9 @@ html.deploy-app .grid {
     <div class="container">
       <div class="topbar">
         <div class="brand">
-          <h1><i class="fa-solid fa-chart-line"></i> TradeInsight 原型集（单页多屏）</h1>
+          <h1><i class="fa-solid fa-chart-line"></i> TradeInsight（单壳可交互）</h1>
           <p>
-            范围：<strong>美股市场</strong>，仅 <strong>ETF</strong> 与 <strong>个股</strong>。记录执行、决策类型、目的、个人/市场情绪与信息来源；复盘按四类标签汇总盈亏；洞察含行为盲区与规律卡片。
+            下方为 <strong>单一手机界面</strong>：底部可切换日志 / 持仓 / 复盘 / 洞察，中间 <strong>+</strong> 为新建记录；新建保存后写入上方「日志」列表（本地 localStorage）。点击日志卡片可看详情。
           </p>
         </div>
         <div class="quicklinks">
@@ -1104,6 +1141,8 @@ html.deploy-app .grid {
                     <span class="chip chip--pick">全部</span>
                   </div>
                 </div>
+
+                <div id="journal-user-entries"></div>
 
                 <div class="journalCard">
                   <div class="journalCard__top">
@@ -1214,7 +1253,9 @@ html.deploy-app .grid {
                   <div class="sub">美股 · 仅 ETF 或个股</div>
                 </div>
                 <div class="actions">
-                  <div class="iconBtn" title="关闭"><i class="fa-solid fa-xmark"></i></div>
+                  <div class="iconBtn" title="关闭" id="btn-close-record" role="button" tabindex="0">
+                    <i class="fa-solid fa-xmark"></i>
+                  </div>
                 </div>
               </div>
               <div class="content" style="padding-bottom: 4px">
@@ -1227,7 +1268,7 @@ html.deploy-app .grid {
                   <div class="divider"></div>
                   <div class="field full" style="margin-bottom: 10px">
                     <label>标的代码 / 名称</label>
-                    <input class="input" placeholder="如 QQQ" value="QQQ" />
+                    <input id="rec-symbol" class="input" placeholder="如 QQQ" value="QQQ" />
                   </div>
                   <div class="sectionTitle">操作</div>
                   <div class="chips" data-exclusive-pick="1">
@@ -1248,15 +1289,15 @@ html.deploy-app .grid {
                     </div>
                     <div class="field">
                       <label>成交价（USD）</label>
-                      <input class="input input--compact" value="468.20" />
+                      <input id="rec-price" class="input input--compact" value="468.20" />
                     </div>
                     <div class="field">
                       <label>数量</label>
-                      <input class="input input--compact" value="2" />
+                      <input id="rec-qty" class="input input--compact" value="2" />
                     </div>
                     <div class="field full">
                       <label>费用（可选）</label>
-                      <input class="input" value="0.50" />
+                      <input id="rec-fee" class="input" value="0.50" />
                     </div>
                   </div>
                 </div>
@@ -1300,14 +1341,14 @@ html.deploy-app .grid {
                   <div class="divider"></div>
                   <div class="field">
                     <label>触发念头（可选）</label>
-                    <textarea class="textarea" placeholder="可选">新闻标题 + 盘中急拉，感觉不买就会错过。</textarea>
+                    <textarea id="rec-note" class="textarea" placeholder="可选">新闻标题 + 盘中急拉，感觉不买就会错过。</textarea>
                   </div>
                 </div>
 
                 <div class="stickyBar">
                   <div class="row" style="gap: 8px">
-                    <button class="btn secondary" type="button" style="flex: 1">存草稿</button>
-                    <button class="btn" type="button" style="flex: 1">保存记录</button>
+                    <button class="btn secondary" type="button" style="flex: 1" id="btn-draft-record">存草稿</button>
+                    <button class="btn" type="button" style="flex: 1" id="btn-save-record">保存记录</button>
                   </div>
                 </div>
               </div>
@@ -1596,7 +1637,7 @@ html.deploy-app .grid {
                     </div>
                     <div class="reviewLite__val bad">-350</div>
                   </div>
-                  </div>
+                </div>
               </div>
               <div class="bottomNav">
                 <div class="navItem"><i class="fa-solid fa-book-open"></i><div>日志</div></div>
@@ -1771,11 +1812,16 @@ html.deploy-app .grid {
                 <div class="right"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-three-quarters"></i></div>
               </div>
               <div class="appbar">
-                <div class="left">
-                  <h2>记录详情</h2>
-                  <div class="sub">QQQ · ETF · 追涨 · 2026-04-01 14:32</div>
+                <div class="left" style="display: flex; align-items: flex-start; gap: 8px">
+                  <button type="button" class="iconBtn" id="detail-back" title="返回" aria-label="返回">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <div style="min-width: 0">
+                    <h2>记录详情</h2>
+                    <div class="sub" id="detail-sub">QQQ · ETF · 追涨 · 2026-04-01 14:32</div>
+                  </div>
                 </div>
-                <div class="actions">
+                <div class="actions" id="detail-appbar-actions">
                   <div class="iconBtn" title="编辑"><i class="fa-solid fa-pen"></i></div>
                 </div>
               </div>
@@ -1784,16 +1830,18 @@ html.deploy-app .grid {
                   <div class="row">
                     <div>
                       <div class="sectionTitle">成交</div>
-                      <div class="small muted">2026-04-01 14:32 · 468.20 × 2 · 约 $936.40</div>
+                      <div class="small muted" id="detail-exec-line">2026-04-01 14:32 · 468.20 × 2 · 约 $936.40</div>
                     </div>
                     <div>
-                      <div class="journalCard__amt bad" style="font-size: 18px; font-weight: 800">-85</div>
-                      <div class="small muted" style="text-align: right">-1.8%</div>
+                      <div class="journalCard__amt muted" style="font-size: 18px; font-weight: 800" id="detail-pnl-amt">
+                        —
+                      </div>
+                      <div class="small muted" style="text-align: right" id="detail-pnl-pct">待计入</div>
                     </div>
                   </div>
                   <div class="divider"></div>
                   <div class="sectionTitle">标签</div>
-                  <div class="journalCard__tags" style="margin-top: 6px">
+                  <div class="journalCard__tags" style="margin-top: 6px" id="detail-tags">
                     <span class="jTag jTag--dec-chase">追涨</span>
                     <span class="jTag jTag--emo-pos">市场积极</span>
                     <span class="jTag jTag--emo-neg">焦虑</span>
@@ -1801,7 +1849,7 @@ html.deploy-app .grid {
                   </div>
                   <div class="divider"></div>
                   <div class="sectionTitle">触发念头</div>
-                  <div class="small muted">新闻标题 + 盘中急拉，担心踏空。</div>
+                  <div class="small muted" id="detail-note">新闻标题 + 盘中急拉，担心踏空。</div>
                 </div>
 
                 <div class="card">
@@ -1857,6 +1905,105 @@ html.deploy-app .grid {
     </div>
 
     <script>
+      (function mergeAppShell() {
+        var grid = document.querySelector(".grid");
+        if (!grid || grid.dataset.merged === "1") return;
+        var wraps = Array.prototype.slice.call(grid.querySelectorAll(":scope > .phoneWrap"));
+        if (wraps.length !== 6) return;
+
+        var order = ["journal", "record", "holdings", "review", "insights", "detail"];
+        var firstPw = wraps[0];
+        var screen = firstPw.querySelector(".screen");
+        var mainNav = screen.querySelector(".bottomNav");
+        var stack = document.createElement("div");
+        stack.className = "appViewStack";
+
+        wraps.forEach(function (pw, i) {
+          var lab = pw.querySelector(".label");
+          if (lab) lab.remove();
+          var scr = pw.querySelector(".screen");
+          var st = scr.querySelector(".status");
+          var bar = scr.querySelector(".appbar");
+          var cont = scr.querySelector(".content");
+          var view = document.createElement("div");
+          view.className = "appView" + (i === 0 ? " appView--active" : "");
+          view.dataset.view = order[i];
+          view.appendChild(st);
+          view.appendChild(bar);
+          view.appendChild(cont);
+          stack.appendChild(view);
+          if (i > 0) pw.remove();
+        });
+
+        screen.insertBefore(stack, mainNav);
+        grid.dataset.merged = "1";
+
+        var navKeys = ["journal", "holdings", "record", "review", "insights"];
+        window.TI = window.TI || { lastMainTab: "journal" };
+
+        function showView(name) {
+          stack.querySelectorAll(".appView").forEach(function (v) {
+            v.classList.toggle("appView--active", v.dataset.view === name);
+          });
+          var hideNav = name === "detail";
+          mainNav.classList.toggle("bottomNav--hidden", hideNav);
+          mainNav.querySelectorAll(".navItem").forEach(function (item, idx) {
+            var key = navKeys[idx];
+            var fab = item.classList.contains("navItem--fab");
+            item.classList.remove("active");
+            if (fab) {
+              if (name === "record") item.classList.add("active");
+            } else if (key === name) {
+              item.classList.add("active");
+            }
+          });
+        }
+
+        window.TI.showView = showView;
+
+        mainNav.querySelectorAll(".navItem").forEach(function (item, idx) {
+          var key = navKeys[idx];
+          item.classList.add("navItem--click");
+          item.addEventListener("click", function () {
+            if (key === "record") {
+              var cur = stack.querySelector(".appView--active");
+              var cv = cur ? cur.dataset.view : "journal";
+              if (cv !== "detail" && cv !== "record") window.TI.lastMainTab = cv;
+              showView("record");
+              return;
+            }
+            showView(key);
+            window.TI.lastMainTab = key;
+          });
+        });
+
+        var closeRec = document.getElementById("btn-close-record");
+        if (closeRec)
+          closeRec.addEventListener("click", function () {
+            showView(window.TI.lastMainTab || "journal");
+          });
+
+        var detailBack = document.getElementById("detail-back");
+        if (detailBack)
+          detailBack.addEventListener("click", function () {
+            showView(window.TI.lastMainTab || "journal");
+          });
+
+        var jRoot = stack.querySelector('[data-view="journal"]');
+        if (jRoot) {
+          jRoot.querySelectorAll(".journalCard").forEach(function (c) {
+            c.classList.add("journalCard--click");
+          });
+          jRoot.addEventListener("click", function (e) {
+            var card = e.target.closest(".journalCard");
+            if (!card) return;
+            window.TI.populateDetail(card);
+            window.TI.lastMainTab = "journal";
+            showView("detail");
+          });
+        }
+      })();
+
       (function () {
         var d = new Date();
         var pad = function (n) {
@@ -1867,6 +2014,182 @@ html.deploy-app .grid {
         if (dateEl)
           dateEl.value = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
         if (timeEl) timeEl.value = pad(d.getHours()) + ":" + pad(d.getMinutes());
+      })();
+
+      window.TI = window.TI || {};
+      window.TI.populateDetail = function (card) {
+        var nameWrap = card.querySelector(".journalCard__name");
+        var sym = "";
+        if (nameWrap && nameWrap.firstChild && nameWrap.firstChild.nodeType === 3)
+          sym = nameWrap.firstChild.textContent.trim();
+        else if (nameWrap) sym = nameWrap.textContent.replace(/\s+/g, " ").trim();
+        var catEl = card.querySelector(".journalCard__cat");
+        var cat = catEl ? catEl.textContent.trim() : "";
+        var sub = (card.querySelector(".journalCard__sub") && card.querySelector(".journalCard__sub").textContent.trim()) || "";
+        var tags = card.querySelector(".journalCard__tags");
+        document.getElementById("detail-tags").innerHTML = tags ? tags.innerHTML : "";
+        var head = sym + (cat ? " · " + cat : "");
+        if (sub) head += " · " + sub.split("·")[0].trim();
+        document.getElementById("detail-sub").textContent = head || "—";
+        document.getElementById("detail-exec-line").textContent = sub || "—";
+        var amtEl = card.querySelector(".journalCard__amt");
+        var pctEl = card.querySelector(".journalCard__pct");
+        var dAmt = document.getElementById("detail-pnl-amt");
+        if (amtEl) {
+          dAmt.textContent = amtEl.textContent;
+          dAmt.className = "journalCard__amt";
+          if (amtEl.classList.contains("good")) dAmt.classList.add("good");
+          else if (amtEl.classList.contains("bad")) dAmt.classList.add("bad");
+          else if (amtEl.classList.contains("hold")) dAmt.classList.add("hold");
+          else dAmt.classList.add("muted");
+          dAmt.style.fontSize = "18px";
+          dAmt.style.fontWeight = "800";
+        }
+        document.getElementById("detail-pnl-pct").textContent = pctEl ? pctEl.textContent : "";
+        var note = card.dataset.note ? decodeURIComponent(card.dataset.note) : "";
+        document.getElementById("detail-note").textContent = note || "（可在新建记录中填写触发念头）";
+      };
+
+      (function userJournalPersistence() {
+        var KEY = "tradeinsight_entries";
+        function load() {
+          try {
+            return JSON.parse(localStorage.getItem(KEY) || "[]");
+          } catch (e) {
+            return [];
+          }
+        }
+        function save(rows) {
+          localStorage.setItem(KEY, JSON.stringify(rows));
+        }
+
+        function decClassFor(label) {
+          if (label.indexOf("追涨") >= 0) return "jTag--dec-chase";
+          if (label.indexOf("止损") >= 0) return "jTag--dec-stop";
+          if (label.indexOf("止盈") >= 0) return "jTag--dec-profit";
+          return "jTag--dec-neutral";
+        }
+        function emoClass(t) {
+          var neg = ["焦虑", "恐慌", "激进", "市场消极"];
+          for (var i = 0; i < neg.length; i++) if (t.indexOf(neg[i]) >= 0) return "jTag--emo-neg";
+          return "jTag--emo-pos";
+        }
+
+        function renderRow(r) {
+          var tags = "";
+          tags += '<span class="jTag ' + decClassFor(r.decision) + '">' + r.decision + "</span>";
+          r.emotions.forEach(function (t) {
+            tags += '<span class="jTag ' + emoClass(t) + '">' + t + "</span>";
+          });
+          r.sources.forEach(function (t) {
+            tags += '<span class="jTag jTag--src">' + t + "</span>";
+          });
+          var pnlCls = "muted";
+          var pctTxt = "待结算";
+          var pnlTxt = "—";
+          return (
+            '<div class="journalCard journalCard--click journalCard--user" data-note="' +
+            encodeURIComponent(r.note || "") +
+            '" data-entry-id="' +
+            r.id +
+            '">' +
+            '<div class="journalCard__top"><div><span class="journalCard__name">' +
+            r.symbol +
+            '<span class="journalCard__cat">' +
+            r.kind +
+            "</span></span></div>" +
+            '<div class="journalCard__pnl"><div class="journalCard__amt ' +
+            pnlCls +
+            '">' +
+            pnlTxt +
+            '</div><div class="journalCard__pct muted">' +
+            pctTxt +
+            "</div></div></div>" +
+            '<div class="journalCard__sub">' +
+            r.sub +
+            "</div>" +
+            '<div class="journalCard__tags">' +
+            tags +
+            "</div></div>"
+          );
+        }
+
+        function refreshList() {
+          var host = document.getElementById("journal-user-entries");
+          if (!host) return;
+          var rows = load();
+          host.innerHTML = rows
+            .map(renderRow)
+            .reverse()
+            .join("");
+        }
+
+        refreshList();
+
+        function pickOn(root, sel) {
+          var box = root.querySelector(sel);
+          if (!box) return "";
+          var on = box.querySelector(".chip.on");
+          return on ? on.textContent.trim() : "";
+        }
+
+        document.getElementById("btn-save-record")?.addEventListener("click", function () {
+          var rv = document.querySelector('[data-view="record"]');
+          if (!rv) return;
+          var picks = rv.querySelectorAll('[data-exclusive-pick="1"]');
+          var kind =
+            picks[0] && picks[0].querySelector(".chip.on")
+              ? picks[0].querySelector(".chip.on").textContent.trim()
+              : "ETF";
+          var op =
+            picks[1] && picks[1].querySelector(".chip.on")
+              ? picks[1].querySelector(".chip.on").textContent.trim()
+              : "买入";
+          var sym = document.getElementById("rec-symbol")?.value.trim() || "—";
+          var price = document.getElementById("rec-price")?.value.trim() || "—";
+          var qty = document.getElementById("rec-qty")?.value.trim() || "—";
+          var date = document.getElementById("record-date")?.value || "";
+          var time = document.getElementById("record-time")?.value || "";
+          var decChip = rv.querySelector(
+            ".chip--dec-chase.on, .chip--dec-stop.on, .chip--dec-profit.on, .chip--dec-neutral.on"
+          );
+          var decision = decChip ? decChip.textContent.trim() : "—";
+          var emoP = pickOn(rv, '[data-exclusive-emotion="personal"]');
+          var emoM = pickOn(rv, '[data-exclusive-emotion="market"]');
+          var srcBox = rv.querySelector("[data-multi-pick='1']");
+          var sources = [];
+          if (srcBox)
+            srcBox.querySelectorAll(".chip.on").forEach(function (c) {
+              sources.push(c.textContent.trim());
+            });
+          var emotions = [];
+          if (emoP) emotions.push(emoP);
+          if (emoM) emotions.push(emoM);
+          var note = document.getElementById("rec-note")?.value.trim() || "";
+          var sub = date + " " + time + " · " + op + " " + qty + " · 成交价 " + price;
+          var rows = load();
+          rows.push({
+            id: "e" + Date.now(),
+            symbol: sym,
+            kind: kind,
+            op: op,
+            sub: sub,
+            decision: decision,
+            emotions: emotions,
+            sources: sources,
+            note: note,
+          });
+          save(rows);
+          refreshList();
+          if (window.TI && window.TI.showView) {
+            window.TI.showView("journal");
+            window.TI.lastMainTab = "journal";
+          }
+        });
+
+        document.getElementById("btn-draft-record")?.addEventListener("click", function () {
+          alert("草稿仅为示意：当前版本可直接点「保存记录」写入日志。");
+        });
       })();
 
       function setExclusiveTab(tab) {

@@ -1,5 +1,5 @@
 /* TradeInsight PWA：访问过的同域资源会进缓存，便于弱网或再次打开 */
-const CACHE = "tradeinsight-pwa-v1";
+const CACHE = "tradeinsight-pwa-v2";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
