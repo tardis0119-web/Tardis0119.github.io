@@ -1,0 +1,1910 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>TradeInsight 原型（美股 · ETF · 个股）</title>
+    <meta name="theme-color" content="#f3f0f7" />
+    <meta name="description" content="美股 · ETF · 个股交易记录与复盘" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="TradeInsight" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="assets/pwa/icon.svg" />
+    <link rel="apple-touch-icon" href="assets/pwa/icon.svg" />
+    <link rel="stylesheet" href="assets/fontawesome/css/all.min.css" />
+    <style>
+      :root {
+        --bg-page: #f3f0f7;
+        --g-peach: #fff5f0;
+        --g-lavender: #f0f2ff;
+        --g-mist: #faf9ff;
+        --surface: #ffffff;
+        --surface2: rgba(255, 255, 255, 0.72);
+        --text: #141414;
+        --muted: #5c5c5c;
+        --muted2: #8e8e93;
+        --border: rgba(20, 20, 20, 0.08);
+        --ink: #141414;
+        --brand: #ff6b2c;
+        --brand-soft: rgba(255, 107, 44, 0.14);
+        --btn-dark: #141414;
+        --good: #0d7a4e;
+        --warn: #c26a00;
+        --bad: #c53030;
+        --shadow: 0 4px 24px rgba(20, 20, 40, 0.07), 0 1px 3px rgba(20, 20, 40, 0.04);
+        --shadow-card: 0 8px 32px rgba(20, 20, 40, 0.08), 0 2px 8px rgba(20, 20, 40, 0.04);
+        --radius: 22px;
+        --radius-sm: 12px;
+        --phoneW: 390px;
+        --phoneH: 844px;
+        --nav-pad-bottom: max(18px, env(safe-area-inset-bottom, 18px));
+        --font: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB",
+          "Microsoft YaHei", "Noto Sans CJK SC", Inter, "SF Pro Display", Arial, sans-serif;
+        /* 洞察大色块卡片（参考图2） */
+        --insight-purple: #e8ddff;
+        --insight-lime: #d9f5c7;
+        --insight-blue: #c7ddff;
+        --insight-coral: #ffd8c9;
+        --tag-selected: #2d2d2d;
+        --emo-tag-pos: #e5f28c;
+        --emo-tag-neg: #d4baef;
+        --emo-tag-pos-text: #2a3308;
+        --emo-tag-neg-text: #3d2650;
+        --dec-blue-bg: #b3d4ff;
+        --dec-blue-border: #7eb8e8;
+        --dec-blue-text: #143a5c;
+        --dec-orange-bg: #ffd4a8;
+        --dec-orange-border: #e8a066;
+        --dec-orange-text: #6b3410;
+        --nav-fab-bg: #2d2d2d;
+        --emo-mid: #5c5c5c;
+        /* 复盘列表盈亏：轻量淡色，避免与日志大卡同色重对比 */
+        --review-pnl-good: #5fa07e;
+        --review-pnl-bad: #c77b7b;
+        --review-pnl-warn: #b9956a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: radial-gradient(120% 80% at 10% 0%, var(--g-lavender) 0%, transparent 52%),
+          radial-gradient(90% 70% at 95% 10%, var(--g-peach) 0%, transparent 48%),
+          radial-gradient(100% 60% at 50% 100%, rgba(200, 220, 255, 0.35) 0%, transparent 45%),
+          var(--bg-page);
+        color: var(--text);
+        font-family: var(--font);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .container {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .brand h1 {
+        font-size: 17px;
+        margin: 0 0 6px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .brand h1 i {
+        color: var(--brand);
+      }
+      .brand p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.45;
+        max-width: 720px;
+      }
+
+      .quicklinks {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+      }
+      .pill {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 7px 10px;
+        color: var(--muted);
+        font-size: 12px;
+        box-shadow: var(--shadow);
+      }
+      .pill strong {
+        color: var(--text);
+        font-weight: 650;
+      }
+
+      .btn {
+        border: 0;
+        cursor: pointer;
+        border-radius: 999px;
+        padding: 10px 18px;
+        background: var(--btn-dark);
+        color: #fff;
+        font-weight: 600;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        box-shadow: 0 4px 18px rgba(20, 20, 20, 0.12);
+      }
+      .btn.secondary {
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--ink);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 16px;
+        align-items: start;
+      }
+
+      .phoneWrap {
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 20px;
+        box-shadow: var(--shadow-card);
+        backdrop-filter: blur(8px);
+      }
+      .label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 2px 10px;
+      }
+      .label .title {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        font-weight: 650;
+        font-size: 12.5px;
+        color: var(--text);
+      }
+      .label .title i {
+        color: var(--muted);
+      }
+      .label .hint {
+        font-size: 11.5px;
+        color: var(--muted2);
+      }
+
+      .phone {
+        width: var(--phoneW);
+        height: var(--phoneH);
+        margin: 0 auto;
+        border-radius: 32px;
+        border: 1px solid rgba(255, 255, 255, 0.65);
+        background: radial-gradient(110% 85% at 15% -5%, var(--g-peach) 0%, transparent 55%),
+          radial-gradient(90% 70% at 100% 15%, var(--g-lavender) 0%, transparent 50%),
+          radial-gradient(80% 50% at 40% 100%, rgba(255, 230, 210, 0.55) 0%, transparent 45%),
+          var(--g-mist);
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+        position: relative;
+      }
+      .notch {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 24px;
+        border-radius: 999px;
+        background: rgba(20, 20, 20, 0.07);
+        z-index: 5;
+      }
+      .screen {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      .status {
+        padding: 10px 16px 6px;
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+      .status .right {
+        display: inline-flex;
+        gap: 7px;
+        align-items: center;
+      }
+
+      .appbar {
+        padding: 6px 14px 10px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        background: transparent;
+      }
+      .appbar h2 {
+        font-size: 20px;
+        margin: 0;
+        font-weight: 750;
+        letter-spacing: 0.2px;
+      }
+      .appbar .sub {
+        margin-top: 3px;
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+      .appbar .left {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+      .appbar .actions {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .iconBtn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid var(--border);
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(20, 20, 40, 0.06);
+      }
+
+      .content {
+        padding: 0 14px 12px;
+        overflow: auto;
+        flex: 1;
+        min-height: 0;
+        background: transparent;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        box-shadow: var(--shadow-card);
+      }
+      .card + .card {
+        margin-top: 10px;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .muted2 {
+        color: var(--muted2);
+      }
+      .small {
+        font-size: 12px;
+      }
+      .tiny {
+        font-size: 11px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.55);
+        border: 1px solid var(--border);
+        padding: 4px;
+        border-radius: 999px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tab {
+        flex: 1;
+        min-width: 52px;
+        text-align: center;
+        padding: 7px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        color: var(--muted);
+        border: 1px solid transparent;
+        user-select: none;
+        white-space: nowrap;
+      }
+      .tab.active {
+        background: var(--tag-selected);
+        border-color: var(--tag-selected);
+        color: #fff;
+        font-weight: 700;
+        box-shadow: none;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .chip {
+        display: inline-flex;
+        gap: 5px;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(20, 20, 20, 0.12);
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 500;
+        user-select: none;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      /* 222：非情绪标签选中 = 深灰底 */
+      .chip--pick.on {
+        background: var(--tag-selected);
+        border-color: var(--tag-selected);
+        color: #fff;
+      }
+      .chip--pick:not(.on) {
+        background: #fff;
+        color: var(--ink);
+      }
+      /* 新建记录 · 情绪选中：积极黄绿 / 消极淡紫 */
+      .chip--emo-pos.on {
+        background: var(--emo-tag-pos);
+        border-color: rgba(42, 51, 8, 0.18);
+        color: var(--emo-tag-pos-text);
+      }
+      .chip--emo-neg.on {
+        background: var(--emo-tag-neg);
+        border-color: rgba(61, 38, 80, 0.15);
+        color: var(--emo-tag-neg-text);
+      }
+      .chip--emo-mid.on {
+        background: #e8e8ec;
+        border-color: #c6c6cd;
+        color: #2d2d2d;
+      }
+      /* 决策类型选中：追涨蓝 / 止损橙 / 止盈黄绿 / 其余深灰 */
+      .chip--dec-chase.on {
+        background: var(--dec-blue-bg);
+        border-color: var(--dec-blue-border);
+        color: var(--dec-blue-text);
+      }
+      .chip--dec-stop.on {
+        background: var(--dec-orange-bg);
+        border-color: var(--dec-orange-border);
+        color: var(--dec-orange-text);
+      }
+      .chip--dec-profit.on {
+        background: var(--emo-tag-pos);
+        border-color: rgba(42, 51, 8, 0.18);
+        color: var(--emo-tag-pos-text);
+      }
+      .chip--dec-neutral.on {
+        background: var(--tag-selected);
+        border-color: var(--tag-selected);
+        color: #fff;
+      }
+      .chip.good {
+        background: rgba(5, 150, 105, 0.08);
+        border-color: rgba(5, 150, 105, 0.25);
+        color: #047857;
+      }
+      .chip.bad {
+        background: rgba(220, 38, 38, 0.06);
+        border-color: rgba(220, 38, 38, 0.22);
+        color: #b91c1c;
+      }
+      .chip.warn {
+        background: rgba(217, 119, 6, 0.08);
+        border-color: rgba(217, 119, 6, 0.25);
+        color: #b45309;
+      }
+
+      /* 日志交易卡片（参考 111） */
+      .journalCard {
+        background: #fff;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        padding: 14px 16px;
+        margin-top: 10px;
+        box-shadow: var(--shadow-card);
+      }
+      .journalCard__top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .journalCard__name {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        line-height: 1.2;
+      }
+      .journalCard__cat {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted2);
+        margin-left: 6px;
+      }
+      .journalCard__pnl {
+        text-align: right;
+        flex-shrink: 0;
+      }
+      .journalCard__amt {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .journalCard__amt.good {
+        color: var(--good);
+      }
+      .journalCard__amt.bad {
+        color: var(--bad);
+      }
+      .journalCard__amt.hold {
+        color: var(--ink);
+        font-size: 17px;
+      }
+      .journalCard__pct {
+        font-size: 12px;
+        margin-top: 2px;
+      }
+      .journalCard__sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .journalCard__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .jTag {
+        display: inline-flex;
+        padding: 4px 9px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid transparent;
+      }
+      /* 决策：追涨蓝、止损橙、止盈与积极同系黄绿；其余决策浅灰蓝 */
+      .jTag--dec-profit {
+        background: var(--emo-tag-pos);
+        color: var(--emo-tag-pos-text);
+        border-color: rgba(42, 51, 8, 0.12);
+      }
+      .jTag--dec-chase {
+        background: var(--dec-blue-bg);
+        color: var(--dec-blue-text);
+        border-color: var(--dec-blue-border);
+      }
+      .jTag--dec-stop {
+        background: var(--dec-orange-bg);
+        color: var(--dec-orange-text);
+        border-color: var(--dec-orange-border);
+      }
+      .jTag--dec-neutral {
+        background: #d8e8f5;
+        color: #2c4a5e;
+        border-color: #aecde6;
+      }
+      /* 情绪：积极黄绿、消极淡紫（消极标签排在后） */
+      .jTag--emo-pos {
+        background: var(--emo-tag-pos);
+        color: var(--emo-tag-pos-text);
+        border-color: rgba(42, 51, 8, 0.12);
+      }
+      .jTag--emo-neg {
+        background: var(--emo-tag-neg);
+        color: var(--emo-tag-neg-text);
+        border-color: rgba(61, 38, 80, 0.12);
+      }
+      .jTag--src {
+        background: #f4f4f5;
+        color: #52525b;
+        border-color: #e4e4e7;
+      }
+
+      .listItem {
+        display: flex;
+        gap: 10px;
+        padding: 12px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.75);
+        margin-top: 8px;
+        box-shadow: 0 2px 12px rgba(20, 20, 40, 0.04);
+      }
+      .badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        flex: 0 0 auto;
+        color: var(--muted);
+      }
+      .liMain {
+        flex: 1;
+        min-width: 0;
+      }
+      .liTop {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .liTitle {
+        font-weight: 650;
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .liMeta {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+      .kv {
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
+        padding: 3px 7px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 10.5px;
+      }
+      .kv i {
+        color: var(--muted2);
+        font-size: 10px;
+      }
+
+      .pnl {
+        font-weight: 700;
+        font-size: 12.5px;
+      }
+      .pnl.good {
+        color: var(--good);
+      }
+      .pnl.bad {
+        color: var(--bad);
+      }
+      .pnl.flat {
+        color: var(--muted);
+      }
+
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 10px 0;
+      }
+
+      .fieldGrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .field label {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .input,
+      .select,
+      .textarea {
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid var(--border);
+        padding: 9px 10px;
+        color: var(--text);
+        outline: none;
+        font-size: 13px;
+        width: 100%;
+        max-width: 100%;
+      }
+      .input--compact {
+        font-size: 13px;
+        padding: 8px 8px;
+      }
+      .textarea {
+        min-height: 64px;
+        resize: none;
+      }
+      .full {
+        grid-column: 1 / -1;
+      }
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      .bottomNav {
+        flex-shrink: 0;
+        padding: 10px 12px var(--nav-pad-bottom);
+        margin: 0 10px 10px;
+        border-top: 0;
+        background: rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        box-shadow: var(--shadow-card);
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+        gap: 2px;
+        align-items: start;
+        justify-items: center;
+        min-height: 0;
+      }
+      .navItem {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 5px;
+        min-height: 46px;
+        padding-top: 6px;
+        font-size: 10px;
+        line-height: 1.15;
+        color: var(--muted);
+        font-weight: 500;
+        max-width: 100%;
+      }
+      .navItem i {
+        font-size: 18px;
+        font-weight: 400;
+      }
+      .navItem.active {
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .navItem > i {
+        color: #141414;
+      }
+      .navItem.active > i {
+        color: #141414;
+      }
+      .navItem--fab {
+        padding-top: 0;
+        margin-top: -18px;
+        min-height: 44px;
+        justify-content: center;
+      }
+      .fab {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--nav-fab-bg);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 8px 22px rgba(20, 20, 20, 0.18);
+        border: 3px solid rgba(255, 255, 255, 0.95);
+        color: #fff;
+      }
+      .fab i {
+        font-size: 18px;
+      }
+
+      .sparkline {
+        height: 40px;
+        border-radius: 14px;
+        border: 1px dashed rgba(20, 20, 20, 0.12);
+        background: rgba(255, 255, 255, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted2);
+        font-size: 11px;
+      }
+
+      .miniGrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .stat {
+        padding: 10px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.78);
+      }
+      .stat .k {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .stat .v {
+        margin-top: 5px;
+        font-weight: 750;
+        letter-spacing: 0.1px;
+      }
+      .stat .v.good {
+        color: var(--good);
+      }
+      .stat .v.bad {
+        color: var(--bad);
+      }
+      .miniGrid--reviewPnl .stat .v.good {
+        color: var(--review-pnl-good);
+      }
+      .miniGrid--reviewPnl .stat .v.bad {
+        color: var(--review-pnl-bad);
+      }
+
+      .sectionTitle {
+        font-size: 11px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        color: var(--muted2);
+        margin: 4px 2px 6px;
+        font-weight: 600;
+      }
+
+      /* 复盘：777 轻量列表 × 盈亏 */
+      .reviewLite__title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink);
+        margin: 0 0 4px;
+      }
+      .reviewLite__row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .reviewLite__row:last-child {
+        border-bottom: 0;
+      }
+      .reviewLite__name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .reviewLite__meta {
+        font-size: 11px;
+        color: var(--muted2);
+        margin-top: 4px;
+        line-height: 1.35;
+      }
+      .reviewLite__val {
+        font-size: 14px;
+        font-weight: 600;
+        flex-shrink: 0;
+        text-align: right;
+        letter-spacing: 0.01em;
+      }
+      .reviewLite__val.good {
+        color: var(--review-pnl-good);
+      }
+      .reviewLite__val.bad {
+        color: var(--review-pnl-bad);
+      }
+      .reviewLite__val.warn {
+        color: var(--review-pnl-warn);
+      }
+      .reviewLite__val.muted {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      /* 复盘：标签汇总 */
+      .tagBlock {
+        margin-top: 8px;
+      }
+      .tagBlock h4 {
+        margin: 0 0 6px;
+        font-size: 12.5px;
+        font-weight: 650;
+        color: var(--text);
+      }
+      .metricRow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 12.5px;
+      }
+      .metricRow:last-child {
+        border-bottom: 0;
+      }
+      .metricRow .name {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .metricRow .meta {
+        font-size: 11px;
+        color: var(--muted2);
+        margin-top: 2px;
+      }
+      .val-good {
+        color: var(--good);
+        font-weight: 700;
+      }
+      .val-warn {
+        color: var(--warn);
+        font-weight: 700;
+      }
+      .val-bad {
+        color: var(--bad);
+        font-weight: 700;
+      }
+
+      /* 洞察：决策盲区 */
+      .blindCard .blindTitle {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0 0 8px;
+      }
+      .blindRow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 12.5px;
+      }
+      .blindRow:last-child {
+        border-bottom: 0;
+      }
+      .blindRow .q {
+        color: #374151;
+        line-height: 1.35;
+        flex: 1;
+      }
+
+      /* 洞察：核心规律大色块卡片（参考图2：标题+指标+标签+圆形操作） */
+      .insightStack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 6px;
+      }
+      .insightCardXL {
+        position: relative;
+        border-radius: 32px;
+        padding: 18px 18px 20px;
+        min-height: 118px;
+        box-shadow: 0 6px 28px rgba(20, 20, 40, 0.09);
+        border: 1px solid rgba(255, 255, 255, 0.65);
+      }
+      .insightCardXL--purple {
+        background: var(--insight-purple);
+      }
+      .insightCardXL--lime {
+        background: var(--insight-lime);
+      }
+      .insightCardXL--blue {
+        background: var(--insight-blue);
+      }
+      .insightCardXL--coral {
+        background: var(--insight-coral);
+      }
+      .insightCardXL__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .insightCardXL__head h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1.25;
+        letter-spacing: -0.02em;
+        max-width: 68%;
+      }
+      .insightCardXL__metric {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--ink);
+        opacity: 0.92;
+        white-space: nowrap;
+      }
+      .insightCardXL__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .insightTag {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        color: rgba(20, 20, 20, 0.72);
+        border: 1px solid rgba(20, 20, 20, 0.14);
+        background: rgba(255, 255, 255, 0.45);
+      }
+      .insightCardXL p {
+        margin: 10px 52px 0 0;
+        font-size: 12.5px;
+        color: rgba(20, 20, 20, 0.62);
+        line-height: 1.55;
+      }
+      .insightCardXL__more {
+        position: absolute;
+        right: 16px;
+        bottom: 16px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(20, 20, 20, 0.88);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(20, 20, 20, 0.2);
+      }
+
+      .stickyBar {
+        position: sticky;
+        bottom: 0;
+        padding-top: 8px;
+        background: linear-gradient(180deg, rgba(250, 249, 255, 0), rgba(255, 255, 255, 0.94) 45%);
+      }
+
+      @media (max-width: 460px) {
+        :root {
+          --phoneW: 360px;
+          --phoneH: 780px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="topbar">
+        <div class="brand">
+          <h1><i class="fa-solid fa-chart-line"></i> TradeInsight 原型集（单页多屏）</h1>
+          <p>
+            范围：<strong>美股市场</strong>，仅 <strong>ETF</strong> 与 <strong>个股</strong>。记录执行、决策类型、目的、个人/市场情绪与信息来源；复盘按四类标签汇总盈亏；洞察含行为盲区与规律卡片。
+          </p>
+        </div>
+        <div class="quicklinks">
+          <div class="pill">
+            <i class="fa-solid fa-layer-group"></i><strong>导航</strong>：日志 / 持仓 / 复盘 / 洞察 + 记录
+          </div>
+          <div class="pill">
+            <i class="fa-solid fa-tag"></i><strong>标签</strong>：决策类型 · 个人/市场情绪 · 信息来源（情绪选中为紫/橙，其余选中深灰）
+          </div>
+          <button class="btn secondary" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })">
+            <i class="fa-solid fa-arrow-up"></i> 回到顶部
+          </button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- 1. 日志 -->
+        <div class="phoneWrap">
+          <div class="label">
+            <div class="title"><i class="fa-regular fa-rectangle-list"></i> 首页 · 日志</div>
+            <div class="hint">全部 / ETF / 个股</div>
+          </div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="screen">
+              <div class="status">
+                <div>9:41</div>
+                <div class="right"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-three-quarters"></i></div>
+              </div>
+              <div class="appbar">
+                <div class="left">
+                  <h2>日志</h2>
+                  <div class="sub">美股 · ETF 与个股交易记录</div>
+                </div>
+                <div class="actions">
+                  <div class="iconBtn" title="搜索"><i class="fa-solid fa-magnifying-glass"></i></div>
+                </div>
+              </div>
+              <div class="content">
+                <div class="card">
+                  <div class="tabs" aria-label="品种">
+                    <div class="tab active">全部</div>
+                    <div class="tab">ETF</div>
+                    <div class="tab">个股</div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="chips" data-exclusive-pick="1">
+                    <span class="chip chip--pick on">近7天</span>
+                    <span class="chip chip--pick">本月</span>
+                    <span class="chip chip--pick">近3个月</span>
+                    <span class="chip chip--pick">全部</span>
+                  </div>
+                </div>
+
+                <div class="journalCard">
+                  <div class="journalCard__top">
+                    <div>
+                      <span class="journalCard__name">QQQ<span class="journalCard__cat">ETF</span></span>
+                    </div>
+                    <div class="journalCard__pnl">
+                      <div class="journalCard__amt bad">-85</div>
+                      <div class="journalCard__pct muted">-1.8%</div>
+                    </div>
+                  </div>
+                  <div class="journalCard__sub">2026-04-01 14:32 · 买入 2 股 · 成交价 468.20</div>
+                  <div class="journalCard__tags">
+                    <span class="jTag jTag--dec-chase">追涨</span>
+                    <span class="jTag jTag--emo-pos">市场积极</span>
+                    <span class="jTag jTag--emo-neg">焦虑</span>
+                    <span class="jTag jTag--src">财经新闻</span>
+                  </div>
+                </div>
+
+                <div class="journalCard">
+                  <div class="journalCard__top">
+                    <div>
+                      <span class="journalCard__name">NVDA<span class="journalCard__cat">美股</span></span>
+                    </div>
+                    <div class="journalCard__pnl">
+                      <div class="journalCard__amt bad">-350</div>
+                      <div class="journalCard__pct muted">-4.9%</div>
+                    </div>
+                  </div>
+                  <div class="journalCard__sub">2026-02-05 10:20 · 卖出 5 股</div>
+                  <div class="journalCard__tags">
+                    <span class="jTag jTag--dec-stop">止损</span>
+                    <span class="jTag jTag--emo-neg">市场消极</span>
+                    <span class="jTag jTag--emo-neg">恐慌</span>
+                    <span class="jTag jTag--src">财经新闻</span>
+                  </div>
+                </div>
+
+                <div class="journalCard">
+                  <div class="journalCard__top">
+                    <div>
+                      <span class="journalCard__name">纳指 ETF<span class="journalCard__cat">ETF</span></span>
+                    </div>
+                    <div class="journalCard__pnl">
+                      <div class="journalCard__amt good">+382</div>
+                      <div class="journalCard__pct muted">+12.4%</div>
+                    </div>
+                  </div>
+                  <div class="journalCard__sub">2026-03-20 15:08 · 卖出 300 份</div>
+                  <div class="journalCard__tags">
+                    <span class="jTag jTag--dec-profit">止盈</span>
+                    <span class="jTag jTag--emo-pos">冷静</span>
+                    <span class="jTag jTag--emo-pos">市场积极</span>
+                    <span class="jTag jTag--src">自主研判</span>
+                  </div>
+                </div>
+
+                <div class="journalCard">
+                  <div class="journalCard__top">
+                    <div>
+                      <span class="journalCard__name">TSLA<span class="journalCard__cat">美股</span></span>
+                    </div>
+                    <div class="journalCard__pnl">
+                      <div class="journalCard__amt hold">$1,155</div>
+                      <div class="journalCard__pct muted">持仓中</div>
+                    </div>
+                  </div>
+                  <div class="journalCard__sub">2026-01-28 09:50 · 买入 3 股 · 成交价 385.00</div>
+                  <div class="journalCard__tags">
+                    <span class="jTag jTag--dec-chase">追涨</span>
+                    <span class="jTag jTag--emo-pos">市场积极</span>
+                    <span class="jTag jTag--emo-neg">激进</span>
+                    <span class="jTag jTag--src">社群媒体</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bottomNav">
+                <div class="navItem active"><i class="fa-solid fa-book-open"></i><div>日志</div></div>
+                <div class="navItem"><i class="fa-solid fa-chart-pie"></i><div>持仓</div></div>
+                <div class="navItem navItem--fab">
+                  <div class="fab" title="新增记录"><i class="fa-solid fa-plus"></i></div>
+                </div>
+                <div class="navItem"><i class="fa-solid fa-calendar-days"></i><div>复盘</div></div>
+                <div class="navItem"><i class="fa-solid fa-lightbulb"></i><div>洞察</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 新增记录：单页滚动 -->
+        <div class="phoneWrap">
+          <div class="label">
+            <div class="title"><i class="fa-solid fa-plus"></i> 新增记录 · 单页（可滚动）</div>
+            <div class="hint">基本信息 + 决策信息合一 · 时间自动填充</div>
+          </div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="screen">
+              <div class="status">
+                <div>9:41</div>
+                <div class="right"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-three-quarters"></i></div>
+              </div>
+              <div class="appbar">
+                <div class="left">
+                  <h2>新增记录</h2>
+                  <div class="sub">美股 · 仅 ETF 或个股</div>
+                </div>
+                <div class="actions">
+                  <div class="iconBtn" title="关闭"><i class="fa-solid fa-xmark"></i></div>
+                </div>
+              </div>
+              <div class="content" style="padding-bottom: 4px">
+                <div class="card">
+                  <div class="sectionTitle">品种</div>
+                  <div class="chips" data-exclusive-pick="1">
+                    <span class="chip chip--pick on">ETF</span>
+                    <span class="chip chip--pick">个股</span>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="field full" style="margin-bottom: 10px">
+                    <label>标的代码 / 名称</label>
+                    <input class="input" placeholder="如 QQQ" value="QQQ" />
+                  </div>
+                  <div class="sectionTitle">操作</div>
+                  <div class="chips" data-exclusive-pick="1">
+                    <span class="chip chip--pick on">买入</span>
+                    <span class="chip chip--pick">卖出</span>
+                    <span class="chip chip--pick">加仓</span>
+                    <span class="chip chip--pick">减仓</span>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="fieldGrid">
+                    <div class="field">
+                      <label>日期</label>
+                      <input class="input input--compact" id="record-date" type="date" />
+                    </div>
+                    <div class="field">
+                      <label>时间</label>
+                      <input class="input input--compact" id="record-time" type="time" />
+                    </div>
+                    <div class="field">
+                      <label>成交价（USD）</label>
+                      <input class="input input--compact" value="468.20" />
+                    </div>
+                    <div class="field">
+                      <label>数量</label>
+                      <input class="input input--compact" value="2" />
+                    </div>
+                    <div class="field full">
+                      <label>费用（可选）</label>
+                      <input class="input" value="0.50" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="sectionTitle">决策类型</div>
+                  <div class="chips" data-exclusive-pick="1">
+                    <span class="chip chip--dec-neutral">定投</span>
+                    <span class="chip chip--dec-neutral">抄底</span>
+                    <span class="chip chip--dec-chase on">追涨</span>
+                    <span class="chip chip--dec-stop">止损</span>
+                    <span class="chip chip--dec-profit">止盈</span>
+                    <span class="chip chip--dec-neutral">调仓</span>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="sectionTitle">信息来源（可多选）</div>
+                  <div class="chips" data-multi-pick="1">
+                    <span class="chip chip--pick on">自主研判</span>
+                    <span class="chip chip--pick">财经新闻</span>
+                    <span class="chip chip--pick">社群媒体</span>
+                    <span class="chip chip--pick">财报公告</span>
+                    <span class="chip chip--pick">技术信号</span>
+                    <span class="chip chip--pick">朋友推荐</span>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="sectionTitle">个人情绪（积极至消极）</div>
+                  <div class="chips" data-exclusive-emotion="personal">
+                    <span class="chip chip--emo-pos">积极</span>
+                    <span class="chip chip--emo-pos">冷静</span>
+                    <span class="chip chip--emo-neg on">焦虑</span>
+                    <span class="chip chip--emo-neg">恐慌</span>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="sectionTitle">市场情绪</div>
+                  <div class="chips" data-exclusive-emotion="market">
+                    <span class="chip chip--emo-pos">积极</span>
+                    <span class="chip chip--emo-pos on">平稳</span>
+                    <span class="chip chip--emo-mid">未知</span>
+                    <span class="chip chip--emo-neg">恐慌</span>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="field">
+                    <label>触发念头（可选）</label>
+                    <textarea class="textarea" placeholder="可选">新闻标题 + 盘中急拉，感觉不买就会错过。</textarea>
+                  </div>
+                </div>
+
+                <div class="stickyBar">
+                  <div class="row" style="gap: 8px">
+                    <button class="btn secondary" type="button" style="flex: 1">存草稿</button>
+                    <button class="btn" type="button" style="flex: 1">保存记录</button>
+                  </div>
+                </div>
+              </div>
+              <div class="bottomNav">
+                <div class="navItem"><i class="fa-solid fa-book-open"></i><div>日志</div></div>
+                <div class="navItem"><i class="fa-solid fa-chart-pie"></i><div>持仓</div></div>
+                <div class="navItem navItem--fab active">
+                  <div class="fab"><i class="fa-solid fa-plus"></i></div>
+                </div>
+                <div class="navItem"><i class="fa-solid fa-calendar-days"></i><div>复盘</div></div>
+                <div class="navItem"><i class="fa-solid fa-lightbulb"></i><div>洞察</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 持仓 -->
+        <div class="phoneWrap">
+          <div class="label">
+            <div class="title"><i class="fa-solid fa-briefcase"></i> 持仓</div>
+            <div class="hint">全部 / ETF / 个股 · 主题占比</div>
+          </div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="screen">
+              <div class="status">
+                <div>9:41</div>
+                <div class="right"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-three-quarters"></i></div>
+              </div>
+              <div class="appbar">
+                <div class="left">
+                  <h2>持仓</h2>
+                  <div class="sub">美股账户 · 集中度与交易频次</div>
+                </div>
+                <div class="actions">
+                  <div class="iconBtn" title="概览"><i class="fa-solid fa-chart-pie"></i></div>
+                </div>
+              </div>
+              <div class="content">
+                <div class="card">
+                  <div class="tabs">
+                    <div class="tab active">全部</div>
+                    <div class="tab">ETF</div>
+                    <div class="tab">个股</div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="miniGrid">
+                    <div class="stat">
+                      <div class="k">总市值（USD）</div>
+                      <div class="v">$42,560</div>
+                    </div>
+                    <div class="stat">
+                      <div class="k">浮动盈亏</div>
+                      <div class="v bad">-$1,240</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="row">
+                    <div>
+                      <div class="sectionTitle">主题占比</div>
+                      <div class="muted small">行业/主题仅作归纳标签</div>
+                    </div>
+                    <div class="iconBtn" title="说明"><i class="fa-regular fa-circle-question"></i></div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="listItem">
+                    <div class="badge"><i class="fa-solid fa-chart-area"></i></div>
+                    <div class="liMain">
+                      <div class="liTop">
+                        <div class="liTitle">大盘 / 宽基</div>
+                        <div class="pnl flat">38%</div>
+                      </div>
+                      <div class="liMeta">
+                        <span class="kv"><i class="fa-solid fa-rotate"></i>交易 12 次</span>
+                        <span class="kv"><i class="fa-solid fa-layer-group"></i>ETF 为主</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="listItem">
+                    <div class="badge"><i class="fa-solid fa-microchip"></i></div>
+                    <div class="liMain">
+                      <div class="liTop">
+                        <div class="liTitle">科技</div>
+                        <div class="pnl flat">24%</div>
+                      </div>
+                      <div class="liMeta">
+                        <span class="kv"><i class="fa-solid fa-rotate"></i>交易 15 次</span>
+                        <span class="kv"><i class="fa-solid fa-bolt"></i>追涨偏多</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="listItem">
+                    <div class="badge"><i class="fa-solid fa-shield-virus"></i></div>
+                    <div class="liMain">
+                      <div class="liTop">
+                        <div class="liTitle">医药</div>
+                        <div class="pnl flat">11%</div>
+                      </div>
+                      <div class="liMeta">
+                        <span class="kv"><i class="fa-solid fa-rotate"></i>交易 6 次</span>
+                        <span class="kv"><i class="fa-solid fa-face-flushed"></i>常见：焦虑</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="sparkline" style="margin-top: 8px">主题分布（占位）</div>
+                </div>
+              </div>
+              <div class="bottomNav">
+                <div class="navItem"><i class="fa-solid fa-book-open"></i><div>日志</div></div>
+                <div class="navItem active"><i class="fa-solid fa-chart-pie"></i><div>持仓</div></div>
+                <div class="navItem navItem--fab">
+                  <div class="fab"><i class="fa-solid fa-plus"></i></div>
+                </div>
+                <div class="navItem"><i class="fa-solid fa-calendar-days"></i><div>复盘</div></div>
+                <div class="navItem"><i class="fa-solid fa-lightbulb"></i><div>洞察</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 复盘：情绪条形 + 标签盈亏 -->
+        <div class="phoneWrap">
+          <div class="label">
+            <div class="title"><i class="fa-solid fa-rotate-left"></i> 复盘 · 标签汇总</div>
+            <div class="hint">个人情绪 / 市场情绪 / 决策类型 / 信息来源</div>
+          </div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="screen">
+              <div class="status">
+                <div>9:41</div>
+                <div class="right"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-three-quarters"></i></div>
+              </div>
+              <div class="appbar">
+                <div class="left">
+                  <h2>复盘</h2>
+                  <div class="sub">2026-03 · 美股 ETF/个股</div>
+                </div>
+                <div class="actions">
+                  <div class="iconBtn" title="导出"><i class="fa-solid fa-file-export"></i></div>
+                  <div class="iconBtn" title="月份"><i class="fa-regular fa-calendar"></i></div>
+                </div>
+              </div>
+              <div class="content">
+                <div class="card">
+                  <div class="row">
+                    <div>
+                      <div class="sectionTitle">月度概览</div>
+                      <div class="muted small">18 笔成交 · 12 笔已复盘</div>
+                    </div>
+                    <button class="btn secondary" type="button">补全</button>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="miniGrid miniGrid--reviewPnl">
+                    <div class="stat">
+                      <div class="k">累计盈亏</div>
+                      <div class="v bad">-$2,340</div>
+                    </div>
+                    <div class="stat">
+                      <div class="k">胜率</div>
+                      <div class="v">44%</div>
+                    </div>
+                    <div class="stat">
+                      <div class="k">积极情绪盈亏</div>
+                      <div class="v good">+$860</div>
+                    </div>
+                    <div class="stat">
+                      <div class="k">消极情绪盈亏</div>
+                      <div class="v bad">-$3,120</div>
+                    </div>
+                  </div>
+                  <div class="sparkline" style="margin-top: 8px">月度净值（占位）</div>
+                </div>
+
+                <div class="card">
+                  <div class="reviewLite__title">个人情绪</div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">积极</div>
+                      <div class="reviewLite__meta">1 笔</div>
+                    </div>
+                    <div class="reviewLite__val good">+240</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">冷静</div>
+                      <div class="reviewLite__meta">6 笔 · 胜率 75%</div>
+                    </div>
+                    <div class="reviewLite__val good">+580</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">焦虑</div>
+                      <div class="reviewLite__meta">8 笔 · 胜率 25%</div>
+                    </div>
+                    <div class="reviewLite__val bad">-1,980</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">恐慌</div>
+                      <div class="reviewLite__meta">4 笔 · 胜率 0%</div>
+                    </div>
+                    <div class="reviewLite__val bad">-1,050</div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="reviewLite__title">市场情绪</div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">积极</div>
+                      <div class="reviewLite__meta">6 笔</div>
+                    </div>
+                    <div class="reviewLite__val good">+310</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">平稳</div>
+                      <div class="reviewLite__meta">7 笔</div>
+                    </div>
+                    <div class="reviewLite__val good">+240</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">未知</div>
+                      <div class="reviewLite__meta">5 笔</div>
+                    </div>
+                    <div class="reviewLite__val muted">持仓</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">恐慌</div>
+                      <div class="reviewLite__meta">6 笔</div>
+                    </div>
+                    <div class="reviewLite__val bad">-1,240</div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="reviewLite__title">决策类型</div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">定投</div>
+                      <div class="reviewLite__meta">10 笔</div>
+                    </div>
+                    <div class="reviewLite__val good">+520</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">追涨</div>
+                      <div class="reviewLite__meta">5 笔</div>
+                    </div>
+                    <div class="reviewLite__val bad">-1,680</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">止损</div>
+                      <div class="reviewLite__meta">3 笔</div>
+                    </div>
+                    <div class="reviewLite__val good">+180</div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="reviewLite__title">信息来源</div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">自主研判</div>
+                      <div class="reviewLite__meta">9 笔 · 胜率 67%</div>
+                    </div>
+                    <div class="reviewLite__val good">+640</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">财经新闻</div>
+                      <div class="reviewLite__meta">6 笔</div>
+                    </div>
+                    <div class="reviewLite__val warn">-210</div>
+                  </div>
+                  <div class="reviewLite__row">
+                    <div>
+                      <div class="reviewLite__name">社群媒体</div>
+                      <div class="reviewLite__meta">3 笔 · 胜率 0%</div>
+                    </div>
+                    <div class="reviewLite__val bad">-350</div>
+                  </div>
+                  </div>
+              </div>
+              <div class="bottomNav">
+                <div class="navItem"><i class="fa-solid fa-book-open"></i><div>日志</div></div>
+                <div class="navItem"><i class="fa-solid fa-chart-pie"></i><div>持仓</div></div>
+                <div class="navItem navItem--fab">
+                  <div class="fab"><i class="fa-solid fa-plus"></i></div>
+                </div>
+                <div class="navItem active"><i class="fa-solid fa-calendar-days"></i><div>复盘</div></div>
+                <div class="navItem"><i class="fa-solid fa-lightbulb"></i><div>洞察</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 洞察：盲区 + 核心规律 + 情绪交叉 -->
+        <div class="phoneWrap">
+          <div class="label">
+            <div class="title"><i class="fa-solid fa-binoculars"></i> 洞察</div>
+            <div class="hint">行为指标 + 规律卡片 + 交叉分析</div>
+          </div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="screen">
+              <div class="status">
+                <div>9:41</div>
+                <div class="right"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-three-quarters"></i></div>
+              </div>
+              <div class="appbar">
+                <div class="left">
+                  <h2>洞察</h2>
+                  <div class="sub">基于 15 笔美股记录（示例）</div>
+                </div>
+                <div class="actions">
+                  <div class="iconBtn" title="时间范围"><i class="fa-regular fa-calendar"></i></div>
+                </div>
+              </div>
+              <div class="content">
+                <div class="card blindCard">
+                  <div class="blindTitle">你的决策盲区</div>
+                  <div class="blindRow">
+                    <div class="q">情绪冲动时是否暂停操作</div>
+                    <div class="val-bad">从不</div>
+                  </div>
+                  <div class="blindRow">
+                    <div class="q">止损后是否反向分析</div>
+                    <div class="val-warn">偶尔</div>
+                  </div>
+                  <div class="blindRow">
+                    <div class="q">定投计划执行率</div>
+                    <div class="val-good">87%</div>
+                  </div>
+                  <div class="blindRow">
+                    <div class="q">社群跟风操作占比</div>
+                    <div class="val-bad">27%</div>
+                  </div>
+                </div>
+
+                <div class="sectionTitle" style="margin-top: 4px">核心规律</div>
+                <div class="insightStack">
+                  <div class="insightCardXL insightCardXL--purple">
+                    <div class="insightCardXL__head">
+                      <h3>恐慌情绪下亏损集中</h3>
+                      <span class="insightCardXL__metric">4 笔 · 0%</span>
+                    </div>
+                    <div class="insightCardXL__tags">
+                      <span class="insightTag">个人情绪</span>
+                      <span class="insightTag">合计 -1,050 USD</span>
+                    </div>
+                    <p>「恐慌」全部亏损；同期「冷静」胜率约 75%，差异显著。</p>
+                    <button type="button" class="insightCardXL__more" aria-label="展开"><i class="fa-solid fa-arrow-right"></i></button>
+                  </div>
+                  <div class="insightCardXL insightCardXL--lime">
+                    <div class="insightCardXL__head">
+                      <h3>冷静 × 市场积极</h3>
+                      <span class="insightCardXL__metric">100%</span>
+                    </div>
+                    <div class="insightCardXL__tags">
+                      <span class="insightTag">交叉</span>
+                      <span class="insightTag">均额 +385 USD</span>
+                    </div>
+                    <p>该组合 3 笔样本全胜（样本小，需持续验证）。</p>
+                    <button type="button" class="insightCardXL__more" aria-label="展开"><i class="fa-solid fa-arrow-right"></i></button>
+                  </div>
+                  <div class="insightCardXL insightCardXL--blue">
+                    <div class="insightCardXL__head">
+                      <h3>逆市操作代价高</h3>
+                      <span class="insightCardXL__metric">25%</span>
+                    </div>
+                    <div class="insightCardXL__tags">
+                      <span class="insightTag">市场负面</span>
+                      <span class="insightTag">4 笔样本</span>
+                    </div>
+                    <p>弱势市场下多笔亏损，常见行为是恐慌抛售而非按计划等待。</p>
+                    <button type="button" class="insightCardXL__more" aria-label="展开"><i class="fa-solid fa-arrow-right"></i></button>
+                  </div>
+                  <div class="insightCardXL insightCardXL--coral">
+                    <div class="insightCardXL__head">
+                      <h3>社群来源质量偏低</h3>
+                      <span class="insightCardXL__metric">0%</span>
+                    </div>
+                    <div class="insightCardXL__tags">
+                      <span class="insightTag">信息来源</span>
+                      <span class="insightTag">-350 USD</span>
+                    </div>
+                    <p>社群触发 3 笔全败；同期「自主研判」胜率约 67%。</p>
+                    <button type="button" class="insightCardXL__more" aria-label="展开"><i class="fa-solid fa-arrow-right"></i></button>
+                  </div>
+                </div>
+
+                <div class="card" style="margin-top: 10px">
+                  <div class="sectionTitle">个人 × 市场情绪（交叉）</div>
+                  <div class="sparkline" style="height: 100px; margin-bottom: 8px">
+                    热力矩阵占位：个人 × 市场
+                  </div>
+                  <div class="listItem" style="margin-top: 0">
+                    <div class="liMain">
+                      <div class="liTop">
+                        <div class="liTitle">焦虑 × 市场积极</div>
+                        <div class="pnl bad">-$2,240</div>
+                      </div>
+                      <div class="liMeta">
+                        <span class="kv">追涨占比高</span>
+                        <span class="kv">新闻 / 社群触发</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="listItem">
+                    <div class="liMain">
+                      <div class="liTop">
+                        <div class="liTitle">冷静 × 市场平稳</div>
+                        <div class="pnl good">+$740</div>
+                      </div>
+                      <div class="liMeta">
+                        <span class="kv">定投 / 分批</span>
+                        <span class="kv">自主研判</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="sectionTitle">行动建议</div>
+                  <div class="chips">
+                    <span class="chip chip--pick">焦虑 × 市场积极：不追涨</span>
+                    <span class="chip chip--pick">下单前等待 30 分钟</span>
+                    <span class="chip chip--pick">仅允许定投 / 减仓</span>
+                  </div>
+                </div>
+              </div>
+              <div class="bottomNav">
+                <div class="navItem"><i class="fa-solid fa-book-open"></i><div>日志</div></div>
+                <div class="navItem"><i class="fa-solid fa-chart-pie"></i><div>持仓</div></div>
+                <div class="navItem navItem--fab">
+                  <div class="fab"><i class="fa-solid fa-plus"></i></div>
+                </div>
+                <div class="navItem"><i class="fa-solid fa-calendar-days"></i><div>复盘</div></div>
+                <div class="navItem active"><i class="fa-solid fa-lightbulb"></i><div>洞察</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. 记录详情 -->
+        <div class="phoneWrap">
+          <div class="label">
+            <div class="title"><i class="fa-solid fa-receipt"></i> 记录详情</div>
+            <div class="hint">复盘入口</div>
+          </div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="screen">
+              <div class="status">
+                <div>9:41</div>
+                <div class="right"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-three-quarters"></i></div>
+              </div>
+              <div class="appbar">
+                <div class="left">
+                  <h2>记录详情</h2>
+                  <div class="sub">QQQ · ETF · 追涨 · 2026-04-01 14:32</div>
+                </div>
+                <div class="actions">
+                  <div class="iconBtn" title="编辑"><i class="fa-solid fa-pen"></i></div>
+                </div>
+              </div>
+              <div class="content">
+                <div class="card">
+                  <div class="row">
+                    <div>
+                      <div class="sectionTitle">成交</div>
+                      <div class="small muted">2026-04-01 14:32 · 468.20 × 2 · 约 $936.40</div>
+                    </div>
+                    <div>
+                      <div class="journalCard__amt bad" style="font-size: 18px; font-weight: 800">-85</div>
+                      <div class="small muted" style="text-align: right">-1.8%</div>
+                    </div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="sectionTitle">标签</div>
+                  <div class="journalCard__tags" style="margin-top: 6px">
+                    <span class="jTag jTag--dec-chase">追涨</span>
+                    <span class="jTag jTag--emo-pos">市场积极</span>
+                    <span class="jTag jTag--emo-neg">焦虑</span>
+                    <span class="jTag jTag--src">财经新闻</span>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="sectionTitle">触发念头</div>
+                  <div class="small muted">新闻标题 + 盘中急拉，担心踏空。</div>
+                </div>
+
+                <div class="card">
+                  <div class="row">
+                    <div>
+                      <div class="sectionTitle">复盘</div>
+                      <div class="small muted">结构化追问</div>
+                    </div>
+                    <span class="chip chip--pick">未完成</span>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="field">
+                    <label>是否符合交易计划？</label>
+                    <div class="chips" data-exclusive-pick="1">
+                      <span class="chip chip--pick on">符合</span>
+                      <span class="chip chip--pick">不符合</span>
+                      <span class="chip chip--pick">无计划</span>
+                    </div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="field">
+                    <label>主要问题（多选）</label>
+                    <div class="chips" data-multi-pick="1">
+                      <span class="chip chip--pick on">情绪驱动</span>
+                      <span class="chip chip--pick">入场过早</span>
+                      <span class="chip chip--pick">仓位偏大</span>
+                    </div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="field">
+                    <label>下次改进（可选）</label>
+                    <textarea class="textarea">焦虑且市场积极时，延迟 30 分钟，仅小仓或定投。</textarea>
+                  </div>
+                  <div class="row" style="margin-top: 10px; gap: 8px">
+                    <button class="btn secondary" type="button" style="flex: 1">保存</button>
+                    <button class="btn" type="button" style="flex: 1">完成复盘</button>
+                  </div>
+                </div>
+              </div>
+              <div class="bottomNav">
+                <div class="navItem active"><i class="fa-solid fa-book-open"></i><div>日志</div></div>
+                <div class="navItem"><i class="fa-solid fa-chart-pie"></i><div>持仓</div></div>
+                <div class="navItem navItem--fab">
+                  <div class="fab"><i class="fa-solid fa-plus"></i></div>
+                </div>
+                <div class="navItem"><i class="fa-solid fa-calendar-days"></i><div>复盘</div></div>
+                <div class="navItem"><i class="fa-solid fa-lightbulb"></i><div>洞察</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var d = new Date();
+        var pad = function (n) {
+          return (n < 10 ? "0" : "") + n;
+        };
+        var dateEl = document.getElementById("record-date");
+        var timeEl = document.getElementById("record-time");
+        if (dateEl)
+          dateEl.value = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+        if (timeEl) timeEl.value = pad(d.getHours()) + ":" + pad(d.getMinutes());
+      })();
+
+      function setExclusiveTab(tab) {
+        var tabs = tab.parentElement;
+        if (!tabs) return;
+        tabs.querySelectorAll(".tab").forEach(function (t) {
+          t.classList.remove("active");
+        });
+        tab.classList.add("active");
+      }
+
+      document.querySelectorAll(".tabs .tab").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          setExclusiveTab(tab);
+        });
+      });
+
+      document.querySelectorAll("[data-exclusive-pick]").forEach(function (box) {
+        box.querySelectorAll(".chip").forEach(function (chip) {
+          chip.addEventListener("click", function () {
+            box.querySelectorAll(".chip").forEach(function (c) {
+              c.classList.remove("on");
+            });
+            chip.classList.add("on");
+          });
+        });
+      });
+
+      document.querySelectorAll("[data-multi-pick]").forEach(function (box) {
+        box.querySelectorAll(".chip").forEach(function (chip) {
+          chip.addEventListener("click", function () {
+            chip.classList.toggle("on");
+          });
+        });
+      });
+
+      document.querySelectorAll("[data-exclusive-emotion]").forEach(function (box) {
+        box.querySelectorAll(".chip").forEach(function (chip) {
+          chip.addEventListener("click", function () {
+            box.querySelectorAll(".chip").forEach(function (c) {
+              c.classList.remove("on");
+            });
+            chip.classList.add("on");
+          });
+        });
+      });
+    </script>
+    <script>
+      (function () {
+        if (!("serviceWorker" in navigator)) return;
+        var secure =
+          location.protocol === "https:" ||
+          location.hostname === "localhost" ||
+          location.hostname === "127.0.0.1";
+        if (!secure) return;
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(function () {});
+        });
+      })();
+    </script>
+  </body>
+</html>
