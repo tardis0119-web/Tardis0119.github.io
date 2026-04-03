@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="deploy-app">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>TradeInsight 原型（美股 · ETF · 个股）</title>
+    <title>TradeInsight · 美股 ETF</title>
     <meta name="theme-color" content="#f3f0f7" />
     <meta name="description" content="美股 · ETF · 个股交易记录与复盘" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -12,6 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="assets/pwa/icon.svg" />
     <link rel="apple-touch-icon" href="assets/pwa/icon.svg" />
+    <!-- 图标字体：开发时请先执行 npm run assets 生成 ./assets/fontawesome；线上必须与 index.html 同级的 assets 整包一起部署 -->
     <link rel="stylesheet" href="assets/fontawesome/css/all.min.css" />
     <style>
       :root {
@@ -1022,6 +1023,26 @@
         }
       }
     </style>
+    <style id="deploy-app-layout">
+/* 部署页：单应用预览，隐藏原型集说明与各屏标题条 */
+html.deploy-app .topbar,
+html.deploy-app .quicklinks {
+  display: none !important;
+}
+html.deploy-app .phoneWrap > .label {
+  display: none !important;
+}
+html.deploy-app .container {
+  max-width: 100%;
+  padding: 12px 10px 40px;
+  box-sizing: border-box;
+}
+html.deploy-app .grid {
+  display: grid;
+  gap: 20px;
+}
+
+  </style>
   </head>
   <body>
     <div class="container">
